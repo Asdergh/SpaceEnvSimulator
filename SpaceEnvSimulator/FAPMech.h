@@ -8,6 +8,11 @@
 #include<fstream>
 
 
+#define KA_mass 1250.0
+#define KA_SA 1.5 * 1.8
+#define Cx_coeff 2.0 * 2.5
+#define Sigma_coeff (Cx_coeff * KA_SA) / (2 * KA_mass)
+
 #define H_peregee 350.0
 #define H_apogee 450.0
 #define I_param 20.0
@@ -34,14 +39,17 @@ class FAPMech
 private:
 
 
-	std::vector<float> position_AGSK;
-	std::vector<float> position_GSK;
-	std::vector<float> position_LBH;
+	
+	float* position_AGSK = new float[3];
+	float* position_GSK = new float[3];
+	float* position_LBH = new float[3];
 
 	float transversial_velocity;
 	float radial_velocity;
 	float velocity_normal;
-	std::vector<float> velocity_vector;
+	float* velocity_vector = new float[3];
+	float** indignant_acceleration_120_tensor = new float* [6];
+	float** indignant_acceleration_500_tensor = new float* [6];
 
 	float r_normal_AGSK;
 	float theta_param;
@@ -78,16 +86,19 @@ private:
 	float* a5_second_level = new float[7]{ -4.50458e-14, 1.22625e-13, 1.52279e-13, 1.42846e-13, 5.08071e-14, 3.04913e-14, -8.45011e-18 };
 	float* a6_second_level = new float[7]{ 6.72086e-18, -2.05736e-17, -2.35576e-17, -2.01726e-17, -5.34955e-18, -4.94989e-18, 1.9849e-18 };
 
+	float max_time = 2 * 3.14 * sqrt(pow(Semimajor_axis, 3) / Venus_grav_param);
 
 public:
 
 	FAPMech();
+	~FAPMech();
 	void calculate_anomalies();
 	void calculate_AGSK_pos();
 	void calculate_velocities();
 	void calculate_GSK_pos();
 	float calculate_LBH_params();
 	void calculate_density();
+	void calculate_acceleration();
 	void run_simulation();
 
 

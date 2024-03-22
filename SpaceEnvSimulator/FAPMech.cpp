@@ -4,22 +4,6 @@
 
 FAPMech::FAPMech()
 {
-	position_AGSK.push_back(0);
-	position_AGSK.push_back(0);
-	position_AGSK.push_back(0);
-
-	position_GSK.push_back(0);
-	position_GSK.push_back(0);
-	position_GSK.push_back(0);
-
-	position_LBH.push_back(0);
-	position_LBH.push_back(0);
-	position_LBH.push_back(0);
-
-	velocity_vector.push_back(0);
-	velocity_vector.push_back(0);
-	velocity_vector.push_back(0);
-
 
 	transversial_velocity = 0;
 	radial_velocity = 0;
@@ -39,6 +23,41 @@ FAPMech::FAPMech()
 	L_param = 0;
 	D_param = 0;
 
+}
+FAPMech::~FAPMech()
+{
+	delete[] position_GSK;
+	delete[] position_AGSK;
+	delete[] velocity_vector;
+	delete[] density_night_param_first;
+	delete[] density_night_param_second;
+
+	delete[] a0_first_level;
+	delete[] a1_first_level;
+	delete[] a2_first_level;
+	delete[] a3_first_level;
+	delete[] a4_first_level;
+	delete[] a5_first_level;
+	delete[] a6_first_level;
+
+	delete[] a0_second_level;
+	delete[] a1_second_level;
+	delete[] a2_second_level;
+	delete[] a3_second_level;
+	delete[] a4_second_level;
+	delete[] a5_second_level;
+	delete[] a6_second_level;
+
+	for (int item_index{ 0 }; item_index < 6; item_index++)
+	{
+		delete[] indignant_acceleration_120_tensor[item_index];
+		delete[] indignant_acceleration_500_tensor[item_index];
+	}
+
+	delete[] indignant_acceleration_120_tensor;
+	delete[] indignant_acceleration_500_tensor;
+
+	std::cout << "\n" << "data was delted!!!" << "\n";
 }
 void FAPMech::calculate_anomalies()
 {
@@ -167,37 +186,37 @@ float FAPMech::calculate_LBH_params()
 
 void FAPMech::calculate_density()
 {
-	density_night_param_first[0] = ND_upper_120 * (a0_first_level[0] + H_param * a1_first_level[0] + pow(H_param, 2) * a2_first_level[0] + pow(H_param, 3) * a3_first_level[0] 
-		+ pow(H_param, 4) * a4_first_level[0] + pow(H_param, 5) * a5_first_level[0] + pow(H_param, 6) * a6_first_level[0]);
-	density_night_param_first[1] = ND_upper_120 * (a0_first_level[1] + H_param * a1_first_level[1] + pow(H_param, 2) * a2_first_level[1] + pow(H_param, 3) * a3_first_level[1]
-		+ pow(H_param, 4) * a4_first_level[1] + pow(H_param, 5) * a5_first_level[1] + pow(H_param, 6) * a6_first_level[1]);
-	density_night_param_first[2] = ND_upper_120 * (a0_first_level[2] + H_param * a1_first_level[2] + pow(H_param, 2) * a2_first_level[2] + pow(H_param, 3) * a3_first_level[2]
-		+ pow(H_param, 4) * a4_first_level[2] + pow(H_param, 5) * a5_first_level[2] + pow(H_param, 6) * a6_first_level[2]);
-	density_night_param_first[3] = ND_upper_120 * (a0_first_level[3] + H_param * a1_first_level[3] + pow(H_param, 2) * a2_first_level[3] + pow(H_param, 3) * a3_first_level[3]
-		+ pow(H_param, 4) * a4_first_level[3] + pow(H_param, 5) * a5_first_level[3] + pow(H_param, 6) * a6_first_level[3]);
-	density_night_param_first[4] = ND_upper_120 * (a0_first_level[4] + H_param * a1_first_level[4] + pow(H_param, 2) * a2_first_level[4] + pow(H_param, 3) * a3_first_level[0]
-		+ pow(H_param, 4) * a4_first_level[4] + pow(H_param, 5) * a5_first_level[4] + pow(H_param, 6) * a6_first_level[4]);
-	density_night_param_first[5] = ND_upper_120 * (a0_first_level[5] + H_param * a1_first_level[5] + pow(H_param, 2) * a2_first_level[5] + pow(H_param, 3) * a3_first_level[5]
-		+ pow(H_param, 4) * a4_first_level[5] + pow(H_param, 5) * a5_first_level[5] + pow(H_param, 6) * a6_first_level[5]);
-	density_night_param_first[6] = ND_upper_120 * (a0_first_level[6] + H_param * a1_first_level[6] + pow(H_param, 2) * a2_first_level[6] + pow(H_param, 3) * a3_first_level[6]
-		+ pow(H_param, 4) * a4_first_level[6] + pow(H_param, 5) * a5_first_level[6] + pow(H_param, 6) * a6_first_level[6]);
+	for (int den_index{ 0 }; den_index < 7; den_index++)
+	{
+		density_night_param_first[den_index] = ND_upper_120 * (a0_first_level[den_index] + a1_first_level[den_index] * H_param + a2_first_level[den_index] * pow(H_param, 2)
+			+ a3_first_level[den_index] * pow(H_param, 3) + a4_first_level[den_index] * pow(H_param, 4) + a5_first_level[den_index] * pow(H_param, 5) + a6_first_level[den_index] * pow(H_param, 6));
+	}
 
+	for (int den_index{ 0 }; den_index < 7; den_index++)
+	{
+		density_night_param_second[den_index] = ND_upper_120 * (a0_second_level[den_index] + a1_second_level[den_index] * H_param + a2_second_level[den_index] * pow(H_param, 2)
+			+ a3_second_level[den_index] * pow(H_param, 3) + a4_second_level[den_index] * pow(H_param, 4) + a5_second_level[den_index] * pow(H_param, 5) + a6_second_level[den_index] * pow(H_param, 6));
+	}
 
-	density_night_param_second[0] = ND_upper_120 * (a0_second_level[0] + H_param * a1_second_level[0] + pow(H_param, 2) * a2_second_level[0] + pow(H_param, 3) * a3_second_level[0]
-		+ pow(H_param, 4) * a4_second_level[0] + pow(H_param, 5) * a5_second_level[0] + pow(H_param, 6) * a6_second_level[0]);
-	density_night_param_second[1] = ND_upper_120 * (a0_second_level[1] + H_param * a1_second_level[1] + pow(H_param, 2) * a2_second_level[1] + pow(H_param, 3) * a3_second_level[1]
-		+ pow(H_param, 4) * a4_second_level[1] + pow(H_param, 5) * a5_second_level[1] + pow(H_param, 6) * a6_second_level[1]);
-	density_night_param_second[2] = ND_upper_120 * (a0_second_level[2] + H_param * a1_second_level[2] + pow(H_param, 2) * a2_second_level[2] + pow(H_param, 3) * a3_second_level[2]
-		+ pow(H_param, 4) * a4_second_level[2] + pow(H_param, 5) * a5_second_level[2] + pow(H_param, 6) * a6_second_level[2]);
-	density_night_param_second[3] = ND_upper_120 * (a0_second_level[3] + H_param * a1_second_level[3] + pow(H_param, 2) * a2_second_level[3] + pow(H_param, 3) * a3_first_level[3]
-		+ pow(H_param, 4) * a4_second_level[3] + pow(H_param, 5) * a5_second_level[3] + pow(H_param, 6) * a6_second_level[3]);
-	density_night_param_second[4] = ND_upper_120 * (a0_second_level[4] + H_param * a1_second_level[4] + pow(H_param, 2) * a2_second_level[4] + pow(H_param, 3) * a3_second_level[0]
-		+ pow(H_param, 4) * a4_second_level[4] + pow(H_param, 5) * a5_second_level[4] + pow(H_param, 6) * a6_second_level[4]);
-	density_night_param_second[5] = ND_upper_120 * (a0_second_level[5] + H_param * a1_second_level[5] + pow(H_param, 2) * a2_second_level[5] + pow(H_param, 3) * a3_second_level[5]
-		+ pow(H_param, 4) * a4_second_level[5] + pow(H_param, 5) * a5_second_level[5] + pow(H_param, 6) * a6_second_level[5]);
-	density_night_param_second[6] = ND_upper_120 * (a0_second_level[6] + H_param * a1_second_level[6] + pow(H_param, 2) * a2_second_level[6] + pow(H_param, 3) * a3_second_level[6]
-		+ pow(H_param, 4) * a4_second_level[6] + pow(H_param, 5) * a5_second_level[6] + pow(H_param, 6) * a6_second_level[6]);
+}
 
+void FAPMech::calculate_acceleration()
+{
+	for (int acc_index{ 0 }; acc_index < 6; acc_index++)
+	{
+		float simple_acceleration_120_T = -Sigma_coeff * density_night_param_first[acc_index] * transversial_velocity;
+		float simple_acceleration_120_S = -Sigma_coeff * density_night_param_first[acc_index] * radial_velocity;
+		float* simple_acceleration_120_vector = new float[3] {simple_acceleration_120_T, simple_acceleration_120_S, 0.0};
+
+		float simple_acceleration_500_T = -Sigma_coeff * density_night_param_second[acc_index] * transversial_velocity;
+		float simple_acceleration_500_S = -Sigma_coeff * density_night_param_second[acc_index] * radial_velocity;
+		float* simple_acceleration_500_vector = new float [3] {simple_acceleration_500_T, simple_acceleration_500_S, 0.0};
+		
+		indignant_acceleration_120_tensor[acc_index] = simple_acceleration_120_vector;
+		indignant_acceleration_500_tensor[acc_index] = simple_acceleration_500_vector;
+
+		std::cout << indignant_acceleration_120_tensor[acc_index];
+	}
 }
 
 void FAPMech::run_simulation()
@@ -209,29 +228,61 @@ void FAPMech::run_simulation()
 	calculate_anomalies();
 	calculate_AGSK_pos();
 	calculate_velocities();
-	calculate_GSK_pos();
-	calculate_LBH_params();
+	for (float curent_time{ 0.0 }; curent_time < max_time; curent_time += max_time / 3)
+	{
+		calculate_GSK_pos();
+		calculate_LBH_params();
+		calculate_density();
+		calculate_acceleration();
+	}
 
 
 
 	out_data_file << "pos [x: " << position_AGSK[0] << "y: " << position_AGSK[1] << "z: " << position_AGSK[2] << "]" << "\n";
 	out_data_file << "pos [x: " << position_GSK[0] << "y: " << position_GSK[1] << "z: " << position_GSK[2] << "]" << "\n";
 	out_data_file << "pos [x: " << position_LBH[0] << "y: " << position_LBH[1] << "z: " << position_LBH[2] << "]" << "\n";
+	out_data_file << "\n---------------------------------" << "velocity" << "----------------------------------------------\n";
 	out_data_file << "transversial_vel: " << transversial_velocity << "\n";
 	out_data_file << "rad_vel: " << radial_velocity << "\n";
+	out_data_file << "\n---------------------------------" << "trajactory params" << "----------------------------------------------\n";
 	out_data_file << "r_normal_AGSK: " << r_normal_AGSK << "\n";
 	out_data_file << "theta: " << theta_param << "\n";
-	out_data_file << "ext_param" << ext_param << "\n";
-	out_data_file << "u_param" << u_param << "\n";
+	out_data_file << "ext_param: " << ext_param << "\n";
+	out_data_file << "u_param: " << u_param << "\n";
 	out_data_file << "time: " << time << "\n";
+	out_data_file << "\n---------------------------------" << "LBH params" << "----------------------------------------------\n";
 	out_data_file << "N_param: " << N_param << "\n";
 	out_data_file << "B_param: " << B_param << "\n";
 	out_data_file << "H_param: " << H_param << "\n";
 	out_data_file << "La_param: " << La_param << "\n";
 	out_data_file << "L_param: " << L_param << "\n";
 	out_data_file << "D_param: " << D_param << "\n";
-	//out_data_file << "density: " << density_param << "\n";
-	//out_data_file << "night density param: " << density_night_param << "\n";
+	out_data_file << "\n---------------------------------" << "density" << "----------------------------------------------\n";
+	out_data_file << "120 density: ";
+	for (int den_index{ 0 }; den_index < 6; den_index++) { out_data_file << " " << density_night_param_first[den_index]; }
+	out_data_file << "\n500 density: ";
+	for (int den_index{ 0 }; den_index < 6; den_index++) { out_data_file << " " << density_night_param_second[den_index]; }
+	out_data_file << "\n---------------------------------" << "acceleration" << "----------------------------------------------\n";
+	out_data_file << "120_acceleration:\n";
+	for (int acc_i{ 0 }; acc_i < 6; acc_i++)
+	{
+		out_data_file << "\tacc with density number: " << acc_i << "\twith cores: [";
+		for (int acc_j{ 0 }; acc_j < 3; acc_j++)
+		{
+			out_data_file << " " << indignant_acceleration_120_tensor[acc_i][acc_j];
+		}
+		out_data_file << "]\n";
+	}
+	out_data_file << "500_acceleration:\n";
+	for (int acc_i{ 0 }; acc_i < 6; acc_i++)
+	{
+		out_data_file << "\tacc with density number: " << acc_i << "\twith cores: [";
+		for (int acc_j{ 0 }; acc_j < 3; acc_j++)
+		{
+			out_data_file << " " << indignant_acceleration_500_tensor[acc_i][acc_j];
+		}
+		out_data_file << "]\n";
+	}
 
 	out_data_file.close();
 
