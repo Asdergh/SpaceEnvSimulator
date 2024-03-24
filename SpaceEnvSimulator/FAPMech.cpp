@@ -29,8 +29,7 @@ FAPMech::~FAPMech()
 	delete[] position_GSK;
 	delete[] position_AGSK;
 	delete[] velocity_vector;
-	delete[] density_night_param_first;
-	delete[] density_night_param_second;
+	delete[] density_night_param;
 
 	delete[] a0_first_level;
 	delete[] a1_first_level;
@@ -50,35 +49,31 @@ FAPMech::~FAPMech()
 
 	for (int item_index{ 0 }; item_index < 6; item_index++)
 	{
-		delete[] indignant_acceleration_120_tensor[item_index];
-		delete[] indignant_acceleration_500_tensor[item_index];
+		delete[] indignant_acceleration_tensor[item_index];
 	}
 
-	delete[] indignant_acceleration_120_tensor;
-	delete[] indignant_acceleration_500_tensor;
+	delete[] indignant_acceleration_tensor;
 
 	std::cout << "\n" << "data was delted!!!" << "\n";
 }
 void FAPMech::calculate_anomalies()
 {
 	ext_past_param = M_param;
-	int flag = 0;
-	while (abs(ext_param - ext_past_param) <= Accuracy || flag == 0)
-	{
+	ext_param = M_param + Ext_param * sin(ext_past_param);
 
-		ext_param = M_param + Ext_param * sin(ext_past_param);
+	while (fabs(ext_param - ext_past_param) > Accuracy)
+	{
 		ext_past_param = ext_param;
-		flag++;
+		ext_param = M_param + Ext_param * sin(ext_past_param);
 
 		//out_data_file << "test_ext_param: " << ext_param << std::endl;
-		if (flag == 10) {
-			break;
-		}
+
 	}
 
-	r_normal_AGSK = Semimajor_axis * (1 - Ext_param * cos(ext_param));
-	theta_param = 2 * atan(sqrt((1 + Ext_param) / (1 - Ext_param)) * tan(ext_param / 2));
-	u_param = theta_param;
+	
+	theta_param = (2.0 * atan(sqrt((1.0 + Ext_param) / (1.0 - Ext_param)) * tan(ext_param / 2.0))) * (PI / 180.0);
+	u_param = theta_param + omega_param;
+	r_normal_AGSK = Focal_param * (1.0 - pow(Ext_param, 2.0)) / (1.0 + Ext_param * cos(theta_param));
 }
 
 void FAPMech::calculate_AGSK_pos()
@@ -90,9 +85,9 @@ void FAPMech::calculate_AGSK_pos()
 
 void FAPMech::calculate_velocities()
 {
-	transversial_velocity = sqrt(Venus_grav_param / Focal_param) * Ext_param * sin(theta_param);
-	radial_velocity = sqrt(Venus_grav_param / Focal_param) * (1 + Ext_param * cos(theta_param));
-	velocity_normal = sqrt(Venus_grav_param / Focal_param) * sqrt(1 + 2 * Ext_param * cos(theta_param) + pow(Ext_param, 2));
+	transversial_velocity = sqrt(Earth_grav_param / Focal_param) * Ext_param * sin(theta_param);
+	radial_velocity = sqrt(Earth_grav_param / Focal_param) * (1.0 + Ext_param * cos(theta_param));
+	velocity_normal = sqrt(Earth_grav_param / Focal_param) * sqrt(1.0 + 2.0 * Ext_param * cos(theta_param) + pow(Ext_param, 2.0));
 	velocity_vector[0] = -transversial_velocity;
 	velocity_vector[1] = -radial_velocity;
 	velocity_vector[2] = 0.0;
@@ -100,7 +95,7 @@ void FAPMech::calculate_velocities()
 
 void FAPMech::calculate_GSK_pos()
 {
-	float ven_angle = Venus_anguler_vel * time;
+	float ven_angle = Earth_anguler_vel * time;
 
 	position_GSK[0] = (position_AGSK[0] * cos(ven_angle) + position_AGSK[1] * sin(ven_angle));
 	position_GSK[1] = (-position_AGSK[0] * sin(ven_angle) + position_AGSK[1] * cos(ven_angle));
@@ -110,33 +105,40 @@ void FAPMech::calculate_GSK_pos()
 
 float FAPMech::calculate_LBH_params()
 {
-	D_param = sqrt(pow(position_GSK[0], 2) + pow(position_GSK[1], 2));
+	
+	D_param = sqrt(pow(position_GSK[0], 2.0) + pow(position_GSK[1], 2.0));
+	N_param = SM_Earth / sqrt(1.0 - Ext_param3 * pow(sin(B_param), 2.0));
 
 	if (D_param == 0)
 	{
-		B_param = (3.14 / 2) * position_GSK[2] / abs(position_GSK[2]);
-		L_param = 0;
-		H_param = position_GSK[2] * sin(B_param) - Semimajor_axis * sqrt(1 - Ext_param3 * pow(sin(B_param), 2));
+		B_param = (PI / 2.0) * position_GSK[2] / fabs(position_GSK[2]);
+		L_param = 0.0;
+		H_param = position_GSK[2] * sin(B_param) - SM_Earth * sqrt(1.0 - Ext_param3 * pow(sin(B_param), 2.0));
+
+		position_LBH[0] = L_param;
+		position_LBH[1] = B_param;
+		position_LBH[2] = H_param;
+
 		return H_param;
 	}
 
-	else if (D_param > 0)
+	else if (D_param > 0.0)
 	{
 		La_param = asin(position_GSK[1] / D_param);
 
 		if (position_GSK[1] < 0 and position_GSK[0] > 0)
 		{
-			L_param = 2 * 3.14 - La_param;
+			L_param = 2.0 * PI - La_param;
 		}
 
 		else if (position_GSK[1] < 0 and position_GSK[0] < 0)
 		{
-			L_param = 3.14 + La_param;
+			L_param = PI + La_param;
 		}
 
 		else if (position_GSK[1] > 0 and position_GSK[0] < 0)
 		{
-			L_param = 3.14 - La_param;
+			L_param = PI - La_param;
 		}
 
 		else if (position_GSK[1] > 0 and position_GSK[0] > 0)
@@ -144,41 +146,52 @@ float FAPMech::calculate_LBH_params()
 			L_param = La_param;
 		}
 
-	}
+		if (position_GSK[2] == 0) {
 
-	if (position_GSK[0] == 0) {
-		
-		B_param = 0;
-		H_param = D_param - Semimajor_axis;
-		return H_param;
-	
-	}
+			B_param = 0;
+			H_param = D_param - SM_Earth;
 
-	else if (position_GSK[0] != 0)
-	{
-		float r_norma_GSK = sqrt(pow(position_GSK[0], 2) + pow(position_GSK[1], 2) + pow(position_GSK[2], 2));
-		float c_param = asin(position_GSK[2] / r_norma_GSK);
-		float p_param = (Ext_param3 * Semimajor_axis) / (2 * r_norma_GSK);
+			position_LBH[0] = L_param;
+			position_LBH[1] = B_param;
+			position_LBH[2] = H_param;
 
-
-		float s_past_param = 0;
-		float b_param = c_param + s_past_param;
-		float s_param = 0;
-
-		while (abs(s_param - s_past_param) < Accuracy)
-		{
-			s_past_param = s_param;
-			b_param = c_param + s_past_param;
-			s_param = asin((Focal_param * sin(2 * b_param)) / (sqrt(1 - Ext_param3 * pow(sin(b_param), 2))));
-
-			//out_data_file << "test s_param" << s_param;
+			return H_param;
 		}
 
-		B_param = b_param;
-		H_param = D_param * cos(B_param) + position_GSK[2] * sin(B_param) - Semimajor_axis * (sqrt(1 - Ext_param3 * pow(sin(B_param), 2)));
-		
-		return H_param;
+		else
+		{
+			float r_norma_GSK = sqrt(pow(position_GSK[0], 2.0) + pow(position_GSK[1], 2.0) + pow(position_GSK[2], 2.0));
+			float c_param = asin(position_GSK[2] / r_norma_GSK);
+			float p_param = (Ext_param3 * SM_Earth) / (2 * r_norma_GSK);
+
+
+			float s_past_param = 0;
+			float b_param = c_param + s_past_param;
+			float s_param = 0;
+
+			while (abs(s_param - s_past_param) > Accuracy)
+			{
+				s_past_param = s_param;
+				b_param = c_param + s_past_param;
+				s_param = asin((Focal_param * sin((2.0 * b_param) * (PI / 180.0))) / (sqrt(1 - Ext_param3 * pow(sin(b_param * (PI / 180.0)), 2))));
+
+				//out_data_file << "test s_param" << s_param;
+			}
+
+			B_param = b_param;
+			H_param = D_param * cos(B_param) + position_GSK[2] * sin(B_param) - SM_Earth * (sqrt(1 - Ext_param3 * pow(sin(B_param), 2.0)));
+
+			position_LBH[0] = L_param;
+			position_LBH[1] = B_param;
+			position_LBH[2] = H_param;
+
+			return H_param;
+		}
 	}
+
+	
+
+	
 
 
 }
@@ -186,36 +199,42 @@ float FAPMech::calculate_LBH_params()
 
 void FAPMech::calculate_density()
 {
-	for (int den_index{ 0 }; den_index < 7; den_index++)
+
+	if (H_param < 500)
 	{
-		density_night_param_first[den_index] = ND_upper_120 * (a0_first_level[den_index] + a1_first_level[den_index] * H_param + a2_first_level[den_index] * pow(H_param, 2)
-			+ a3_first_level[den_index] * pow(H_param, 3) + a4_first_level[den_index] * pow(H_param, 4) + a5_first_level[den_index] * pow(H_param, 5) + a6_first_level[den_index] * pow(H_param, 6));
+		for (int den_index{ 0 }; den_index < 7; den_index++)
+		{
+			density_night_param[den_index] = ND_upper_120 * exp(a0_first_level[den_index] + a1_first_level[den_index] * H_param + a2_first_level[den_index] * pow(H_param, 2)
+				+ a3_first_level[den_index] * pow(H_param, 3) + a4_first_level[den_index] * pow(H_param, 4) + a5_first_level[den_index] * pow(H_param, 5) + a6_first_level[den_index] * pow(H_param, 6));
+		}
+
+	}
+	
+	else if (H_param > 500)
+	{
+		for (int den_index{ 0 }; den_index < 7; den_index++)
+		{
+			density_night_param[den_index] = ND_upper_120 * exp(a0_second_level[den_index] + a1_second_level[den_index] * H_param + a2_second_level[den_index] * pow(H_param, 2)
+				+ a3_second_level[den_index] * pow(H_param, 3) + a4_second_level[den_index] * pow(H_param, 4) + a5_second_level[den_index] * pow(H_param, 5) + a6_second_level[den_index] * pow(H_param, 6));
+		}
 	}
 
-	for (int den_index{ 0 }; den_index < 7; den_index++)
-	{
-		density_night_param_second[den_index] = ND_upper_120 * (a0_second_level[den_index] + a1_second_level[den_index] * H_param + a2_second_level[den_index] * pow(H_param, 2)
-			+ a3_second_level[den_index] * pow(H_param, 3) + a4_second_level[den_index] * pow(H_param, 4) + a5_second_level[den_index] * pow(H_param, 5) + a6_second_level[den_index] * pow(H_param, 6));
-	}
+	
 
 }
 
 void FAPMech::calculate_acceleration()
 {
-	for (int acc_index{ 0 }; acc_index < 6; acc_index++)
+	for (int acc_index{ 0 }; acc_index < 7; acc_index++)
 	{
-		float simple_acceleration_120_T = -Sigma_coeff * density_night_param_first[acc_index] * transversial_velocity;
-		float simple_acceleration_120_S = -Sigma_coeff * density_night_param_first[acc_index] * radial_velocity;
-		float* simple_acceleration_120_vector = new float[3] {simple_acceleration_120_T, simple_acceleration_120_S, 0.0};
+		double simple_acceleration_T = -1.0 * (Sigma_coeff * density_night_param[acc_index] * transversial_velocity);
+		double simple_acceleration_S = -1.0 * (Sigma_coeff * density_night_param[acc_index] * radial_velocity);
+		double abs_acceleration = sqrt(pow(simple_acceleration_T, 2.0) + pow(simple_acceleration_S, 2.0));
+		double* simple_acceleration_vector = new double[3] {simple_acceleration_T, simple_acceleration_S, abs_acceleration};
 
-		float simple_acceleration_500_T = -Sigma_coeff * density_night_param_second[acc_index] * transversial_velocity;
-		float simple_acceleration_500_S = -Sigma_coeff * density_night_param_second[acc_index] * radial_velocity;
-		float* simple_acceleration_500_vector = new float [3] {simple_acceleration_500_T, simple_acceleration_500_S, 0.0};
+		indignant_acceleration_tensor[acc_index] = simple_acceleration_vector;
 		
-		indignant_acceleration_120_tensor[acc_index] = simple_acceleration_120_vector;
-		indignant_acceleration_500_tensor[acc_index] = simple_acceleration_500_vector;
-
-		std::cout << indignant_acceleration_120_tensor[acc_index];
+		std::cout << indignant_acceleration_tensor[acc_index];
 	}
 }
 
@@ -228,22 +247,38 @@ void FAPMech::run_simulation()
 	calculate_anomalies();
 	calculate_AGSK_pos();
 	calculate_velocities();
-	for (float curent_time{ 0.0 }; curent_time < max_time; curent_time += max_time / 3)
-	{
-		calculate_GSK_pos();
-		calculate_LBH_params();
-		calculate_density();
-		calculate_acceleration();
-	}
+	
 
 
 
-	out_data_file << "pos [x: " << position_AGSK[0] << "y: " << position_AGSK[1] << "z: " << position_AGSK[2] << "]" << "\n";
-	out_data_file << "pos [x: " << position_GSK[0] << "y: " << position_GSK[1] << "z: " << position_GSK[2] << "]" << "\n";
-	out_data_file << "pos [x: " << position_LBH[0] << "y: " << position_LBH[1] << "z: " << position_LBH[2] << "]" << "\n";
+
+
+	time = 0;
+	calculate_GSK_pos();
+	H_param = calculate_LBH_params();
+	calculate_density();
+	calculate_acceleration();
+
+
+
+
+
+	time = max_time / 2;
+	calculate_GSK_pos();
+	H_param = calculate_LBH_params();
+	calculate_density();
+	calculate_acceleration();
+	
+
+
+
+	out_data_file << "pos AGSK [x: " << position_AGSK[0] << "y: " << position_AGSK[1] << "z: " << position_AGSK[2] << "]" << "\n";
+	out_data_file << "pos GSK[x: " << position_GSK[0] << "y: " << position_GSK[1] << "z: " << position_GSK[2] << "]" << "\n";
+	out_data_file << "pos LBH[x: " << position_LBH[0] << "y: " << position_LBH[1] << "z: " << position_LBH[2] << "]" << "\n";
 	out_data_file << "\n---------------------------------" << "velocity" << "----------------------------------------------\n";
 	out_data_file << "transversial_vel: " << transversial_velocity << "\n";
 	out_data_file << "rad_vel: " << radial_velocity << "\n";
+	out_data_file << "abs vel: " << velocity_normal << "\n";
 	out_data_file << "\n---------------------------------" << "trajactory params" << "----------------------------------------------\n";
 	out_data_file << "r_normal_AGSK: " << r_normal_AGSK << "\n";
 	out_data_file << "theta: " << theta_param << "\n";
@@ -259,30 +294,19 @@ void FAPMech::run_simulation()
 	out_data_file << "D_param: " << D_param << "\n";
 	out_data_file << "\n---------------------------------" << "density" << "----------------------------------------------\n";
 	out_data_file << "120 density: ";
-	for (int den_index{ 0 }; den_index < 6; den_index++) { out_data_file << " " << density_night_param_first[den_index]; }
-	out_data_file << "\n500 density: ";
-	for (int den_index{ 0 }; den_index < 6; den_index++) { out_data_file << " " << density_night_param_second[den_index]; }
+	for (int den_index{ 0 }; den_index < 6; den_index++) { out_data_file << " " << density_night_param[den_index]; }
 	out_data_file << "\n---------------------------------" << "acceleration" << "----------------------------------------------\n";
-	out_data_file << "120_acceleration:\n";
-	for (int acc_i{ 0 }; acc_i < 6; acc_i++)
+	out_data_file << "acceleration:\n";
+	for (int acc_i{ 0 }; acc_i < 7; acc_i++)
 	{
 		out_data_file << "\tacc with density number: " << acc_i << "\twith cores: [";
 		for (int acc_j{ 0 }; acc_j < 3; acc_j++)
 		{
-			out_data_file << " " << indignant_acceleration_120_tensor[acc_i][acc_j];
+			out_data_file << " " << indignant_acceleration_tensor[acc_i][acc_j];
 		}
-		out_data_file << "]\n";
+		out_data_file << "\t]\n";
 	}
-	out_data_file << "500_acceleration:\n";
-	for (int acc_i{ 0 }; acc_i < 6; acc_i++)
-	{
-		out_data_file << "\tacc with density number: " << acc_i << "\twith cores: [";
-		for (int acc_j{ 0 }; acc_j < 3; acc_j++)
-		{
-			out_data_file << " " << indignant_acceleration_500_tensor[acc_i][acc_j];
-		}
-		out_data_file << "]\n";
-	}
+
 
 	out_data_file.close();
 
